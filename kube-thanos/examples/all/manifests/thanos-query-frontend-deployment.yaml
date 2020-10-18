@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/component: query-cache
+    app.kubernetes.io/instance: thanos-query-frontend
+    app.kubernetes.io/name: thanos-query-frontend
+    app.kubernetes.io/version: master-2020-08-11-2ea2c2b7
+  name: thanos-query-frontend
+  namespace: thanos
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: query-cache
+      app.kubernetes.io/instance: thanos-query-frontend
+      app.kubernetes.io/name: thanos-query-frontend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: query-cache
+        app.kubernetes.io/instance: thanos-query-frontend
+        app.kubernetes.io/name: thanos-query-frontend
+        app.kubernetes.io/version: master-2020-08-11-2ea2c2b7
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                  - thanos-query-frontend
+              namespaces:
+              - thanos
+              topologyKey: kubernetes.io/hostname
+            weight: 100
+      containers:
+      - args:
+        - query-frontend
+        - --query-frontend.compress-responses
+        - --http-address=0.0.0.0:9090
+        - --query-frontend.downstream-url=http://thanos-query.thanos.svc.cluster.local.:9090
+        - --query-range.split-interval=24h
+        - --query-range.max-retries-per-request=5
+        - --query-frontend.log-queries-longer-than=5s
+        - |-
+          --query-range.response-cache-config="config":
+            "max_size": "0"
+            "max_size_items": 2048
+            "validity": "6h"
+          "type": "in-memory"
+        image: quay.io/thanos/thanos:master-2020-08-11-2ea2c2b7
+        livenessProbe:
+          failureThreshold: 4
+          httpGet:
+            path: /-/healthy
+            port: 9090
+            scheme: HTTP
+          periodSeconds: 30
+        name: thanos-query-frontend
+        ports:
+        - containerPort: 9090
+          name: http
+        readinessProbe:
+          failureThreshold: 20
+          httpGet:
+            path: /-/ready
+            port: 9090
+            scheme: HTTP
+          periodSeconds: 5
+        terminationMessagePolicy: FallbackToLogsOnError
+      terminationGracePeriodSeconds: 120
