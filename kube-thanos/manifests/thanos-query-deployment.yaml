@@ -45,7 +45,8 @@ spec:
         - --http-address=0.0.0.0:9090
         - --query.replica-label=prometheus_replica
         - --query.replica-label=rule_replica
-        - --store=dnssrv+_grpc._tcp.thanos-store.thanos.svc.cluster.local
+        - --store=dnssrv+_grpc._tcp.prometheus-operated.monitoring.svc.cluster.local
+        - --store=dnssrv+_grpc._tcp.prometheus-store.monitoring.svc.cluster.local
         image: quay.io/thanos/thanos:v0.15.0
         livenessProbe:
           failureThreshold: 4
